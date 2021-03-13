@@ -1,7 +1,7 @@
 <!--
  * @Descripttion:
  * @Author: Jason
- * @LastEditTime: 2021-03-13 21:07:02
+ * @LastEditTime: 2021-03-13 21:44:47
 -->
 
 ### Webpack5 搭建 react 脚手架（一）
@@ -657,6 +657,7 @@ new webpack.DefinePlugin({
 ```
 
 index.js
+ww
 
 ```js
 console.log(NODE_ENV); //  production
