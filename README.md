@@ -1,8 +1,9 @@
+-   @Descripttion:
 <!--
- * @Descripttion:
- * @Author: Jason
- * @LastEditTime: 2021-03-13 21:44:47
--->
+-   @Author: Jason
+
+*   @LastEditTime: 2021-03-19 14:21:46
+    -->
 
 ### Webpack5 搭建 react 脚手架（一）
 
@@ -634,14 +635,366 @@ webpack5-demo
 
 ### 第二篇
 
-现在写 Webpack 不好写,现在都流行 Vite,Snowpack 快速构建工具，所以呀！没点才艺以及特点真的没是没什么看头。本来想换个 方向写，但是由于第一篇留下了点不完善的地方，通过这篇来完善一下。
-好的 那么 开始进入正题，现附上上一篇的传送门【】以及 上一篇的 源码
+这是 webpack5 配置 React 开发环境 的后续，由于上一篇主要拿来试水讲的可能比较浅，细节考虑的不是很到位，那么通过这篇来完善一下吧，最近也是忙着搞埋点，我也不想 咕咕咕 （放鸽子），所以抽点时间写一下。
+好的 那么 开始进入正题，现附上上一篇的文章的 [传送门](https://juejin.cn/post/6844904169405415432)大家可以回顾一下 以及[源码](https://github.com/jshuaishuai/react-cli-firstEdit)
 
-### 完善 loader 配置
+## 开发配置完善
 
--   完善 js babel 处理
+### Babel 转译器和插件
 
-babel-loader @babel/core @babel/preset-env 基础三件套
+首先先完善一下之前 `loader` 的配置
+
+下面是原先的 处理`js、jsx `的 `loader`配置
+
+```js
+{
+    test: /\.(js|jsx)$/,
+    exclude: /node_modules/,
+    use: [
+        {
+            loader: "babel-loader",
+            options: {
+                presets: [
+                    "@babel/preset-env",
+                    "@babel/preset-react",
+                ],
+            },
+        },
+    ],
+},
+```
+
+#### Babel presets 配置
+
+babel 应该有知道吧 `是一个 JavaScript 编译器` 官方的定义，它的作用的是让低版本浏览器使用 ES 上新的语法和新的数据类型, 将高版本的 ES 语法和 API 转换成现有浏览器可以运行的代码, 起转译作用。
+
+```js
+babel-loader @babel/core @babel/preset-env
+```
+
+这个三个算的上 babel 在 webpack 中的必不可少的存在
+
+##### babel-loader
+
+这个包允许使用 Babel 和 webpack 编译 JavaScript 文件 [babel-loader](https://github.com/babel/babel-loader/blob/master/README.md)
+
+##### @babel/core
+
+它是 babel 核心库，提供了很多转译 源文件的 API，它需要插件 才能转译，本身不会转译，
+
+```js
+import { transformSync } from "@babel/core";
+
+function babelLoader(source, options) {
+    //  var options= {
+    //             presets: [
+    //                 "@babel/preset-env",
+    //                 "@babel/preset-react",
+    //             ],
+    //         },
+    var result = transformSync(source, options);
+    return this.callback(null, result.code, result.map, result.ast);
+}
+module.exports = babelLoader;
+```
+
+-   source 需要的转译源文件或者是上一个 loader 转译过的结果
+-   options 就是配置 loader 中传的 options 参数
+-   transformSync 同步转译传入的代码，返回转转译后代码、sourceMap 映射和 AST 对象。
+
+##### @babel/preset-env
+
+`babel/preset-env` 是语法转译器也可以叫预设，但是它只转换新的 ES 语法，而不转换新的 ES API，比如 Iterator, Generator, Set, Maps, Proxy, Reflect,Symbol,Promise，而对与这些 新的 API 可以通过 babel-profill 转译，让浏览器实现 新 API 的功能 但是 [babek-profill](https://github.com/babel/babel/tree/master/packages/babel-polyfill) 已经不建议使用了,建议使用 core-js
+
+> As of Babel 7.4.0, this package has been deprecated in favor of directly including core-js/stable (to polyfill ECMAScript features) and regenerator-runtime/runtime (needed to use transpiled generator functions):
+
+```js
+npm i core-js -S
+```
+
+配置如下
+
+```js
+{
+    test: /\.(js|jsx)$/,
+    exclude: /node_modules/,
+    use: [
+        {
+            loader: 'babel-loader',
+            options: {
+                presets: [['@babel/preset-env', {
+                    useBuiltIns: 'entry',
+                    corejs: '3.9.1',
+                    targets: {
+                        chrome: '60',
+                    },
+                }], '@babel/preset-react'],
+            },
+        },
+    ],
+},
+```
+
+##### @babel/preset-env 参数
+
+-   useBuiltIns: "usage"| "entry"| false，默认为 false, 这里讲一讲 `usage` 其他参数的具体看官方描述[传送门](https://www.babeljs.cn/docs/babel-preset-env)
+
+-   usage 会根据配置的浏览器兼容，和只对你用到的 API 来进行 polyfill，实现按需添加补丁
+
+-   targets：
+
+```js
+// 对市场份额 >0.25% 做兼容
+{
+  "targets": "> 0.25%, not dead"
+}
+// 对要支持的最低环境版本的对象 做兼容
+{
+  "targets": {
+    "chrome": "58",
+    "ie": "11"
+  }
+}
+```
+
+当未指定目标时，它的行为类似：preset-env 将所有 ES2015-ES2020 代码转换为与 ES5 兼容。不建议直接使用以下 preset-env 这种方式，因为它没有利用针对特定环境/版本的功能
+
+```js
+{
+  "presets": ["@babel/preset-env"]
+}
+```
+
+由于自@babel/polyfill7.4.0 起已弃用，因此建议您 core-js 通过该 corejs 选项直接添加和设置版本
+
+-   corejs: '3.9.1' 这个'3.9.1' 是 core-js 版本号
+
+#### @babel/preset-react
+
+React 插件的 Babel 预设, `JSX` 转 `React.createElement()`来调用的，主要在转译 react 代码的时候使用。
+
+-   这是一段 jsx 代码
+
+```js
+<div className="wrap" style={{ color: "#272822" }}>
+    <span>一起学习</span>React
+</div>
+```
+
+-   经过 babel/preset-react 转移器转译成：
+
+```js
+React.createElement(
+    "div",
+    {
+        className: "wrap",
+        style: {
+            color: "#272822",
+        },
+    },
+    React.createElement("span", null, "一起学习"),
+    "React"
+);
+```
+
+#### babel plugin 配置
+
+@babel/plugin-syntax-dynamic-import 支持动态加载 import,@babel/preset-env 不支持动态 import 语法转译。
+
+> Currently, @babel/preset-env is unaware that using import() with Webpack relies on Promise internally. Environments which do not have builtin support for Promise, like Internet Explorer, will require both the promise and iterator polyfills be added manually.
+
+@babel/plugin-proposal-decorators 把类和对象的装饰器编译成 ES5 代码
+@babel/plugin-proposal-class-properties 转换静态类属性以及使用属性初始值化语法声明的属性
+
+> 配置转译所需要的插件。使用插件的顺序是按照插件在数组中的顺序依次调用的
+
+现在 babel-loader 参数比较臃肿可以提到 .babelrc.js 文件中
+
+```js
+module.exports = {
+    presets: [
+        [
+            "@babel/preset-env",
+            {
+                useBuiltIns: "entry",
+                corejs: "3.9.1",
+                targets: {
+                    chrome: "58",
+                    ie: "11",
+                },
+            },
+        ],
+        [
+            "@babel/preset-react",
+            {
+                development: process.env.NODE_ENV === "development",
+            },
+        ],
+    ],
+    plugins: [
+        ["@babel/plugin-proposal-decorators", { legacy: true }],
+        ["@babel/plugin-proposal-class-properties", { loose: true }],
+        "@babel/plugin-syntax-dynamic-import",
+    ],
+};
+```
+
+### eslint 配置
+
+目前 eslist 推荐使用 [eslint-webpack-plugin](https://webpack.js.org/plugins/eslint-webpack-plugin/) eslint-loader 即将废弃
+
+> The loader eslint-loader will be deprecated soon
+
+```bash
+npm i
+eslint
+eslint-webpack-plugin
+eslint-config-airbnb-base
+eslint-plugin-import -D
+```
+
+-   eslint >= 7 (版本)
+
+-   eslint-config-airbnb-base 支持所有 es6+的语法规范,需要 eslint 和 eslint-plugin-import 一起使用
+
+-   eslint-plugin-import 用于支持 eslint-config-airbnb-base 做导入/导出语法的检查
+
+**webpack.dev.js**
+
+```js
+ new ESLintPlugin({
+                fix: true, // 启用ESLint自动修复功能
+                extensions: ['js', 'jsx'],
+                context: paths.appSrc, // 文件根目录
+                exclude: '/node_modules/',// 指定要排除的文件/目录
+                cache: true, //缓存
+            }),
+```
+
+此外有了 ES 的语法规范 还需要 react jsx 的的语法规法，
+
+```js
+npm i eslint-plugin-react -D
+// 在eslint config 拓展预设中 配置 react
+extends: [
+    "plugin:react/recommended", // jsx 规范支持
+    "airbnb-base", // 包含所欲ES6+ 规范
+],
+
+// 或者 在插件中设置
+
+"plugins": [
+    "react"
+  ]
+```
+
+同时在根目录配置 `.eslintrc.js`文件
+
+```js
+module.exports = {
+    env: {
+        browser: true,
+        es2021: true,
+    },
+    extends: [
+        "plugin:react/recommended", // jsx 规范支持
+        "airbnb-base", // 包含所欲ES6+ 规范
+    ],
+    parserOptions: {
+        ecmaFeatures: {
+            jsx: true, // Enable JSX support. With ESLint 2+
+        },
+        ecmaVersion: 12,
+        sourceType: "module",
+    },
+    plugins: ["react"],
+    rules: {
+        indent: ["error", 4], // 控制缩进为4空格
+        "no-console": "off", // 出现console 不报错
+        "consistent-return": "off", // 箭头函数不强制return
+        "import/no-extraneous-dependencies": "off",
+        semi: "error",
+        "react/jsx-indent": "off",
+        "import/no-unresolved": [
+            0,
+            {
+                ignore: ["^@/"], // @ 是设置的路径别名
+            },
+        ],
+        "no-debugger": process.env.NODE_ENV === "production" ? "error" : "off",
+    },
+};
+/*
+"off"或者0    //关闭规则
+"warn"或者1    //在打开的规则作为警告（不影响退出代码）
+"error"或者2    //把规则作为一个错误（退出代码触发时为1）
+*/
+```
+
+也可以把 eslint 配置 放在 package.json，跟下面这样但是内容有点多 为了减少耦合性还是放根目录吧
+**package.json**
+
+```json
+"eslintConfig": {
+    "extends": ["plugin:react/recommended","airbnb-base"],
+    "parserOptions": {
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": 12,
+        "sourceType": "module"
+    },
+    "plugins": [
+        "react"
+    ],
+    "rules": {
+        "indent": ["error", 4],
+        "consistent-return": "off",
+        "import/no-extraneous-dependencies": "off",
+        "semi": "error",
+        "react/jsx-indent": "off"
+    },
+    "settings": {
+      "import/resolver": [
+        "node",
+        {
+            "webpack": {
+              "config": "./config/webpack.common.js"
+            }
+
+        }
+    ]
+    }
+  }
+
+```
+
+### 生成环境配置完善
+
+#### 抽离 css
+
+npm install --save-dev mini-css-extract-plugin
+
+#### 压缩 css
+
+npm install css-minimizer-webpack-plugin --save-dev
+
+Optimize CSS Assets Webpack Plugin 不推荐使用了
+
+> ⚠️ For webpack v5 or above please use css-minimizer-webpack-plugin instead.
+
+#### 压缩 js
+
+-   如果您使用的是 webpack v5 或更高版本，则无需安装此插件。Webpack v5 随附了最新 terser-webpack-plugin 的包装
+
+#### 压缩图片
+
+因为 CSS 的下载和 JS 可以并行,当一个 HTML 文件很大的时候，我们可以把 CSS 单独提取出来加载
+
+@babel/plugin-proposal-decorators 把类和对象装饰器编译成 ES5
+@babel/plugin-proposal-class-properties 转换静态类属性以及使用属性初始值化语法声明的属性
+
+````
 
 ### 基础 plugin 配置
 
@@ -654,7 +1007,15 @@ DefinePlugin 设置环境变量
 new webpack.DefinePlugin({
     'NODE_ENV': isEnvProduction && JSON.stringify('production'), // 设置全局
 }),
-```
+````
+
+IgnorePlugin
+
+-   gnorePlugin 用于忽略某些特定的模块，让 webpack 不把这些指定的模块打包进去
+
+import moment from 'moment';
+console.log(moment);
+new webpack.IgnorePlugin(/^\.\/locale/,/moment$/)
 
 index.js
 ww
@@ -662,3 +1023,5 @@ ww
 ```js
 console.log(NODE_ENV); //  production
 ```
+
+### 缩小文件查找范围

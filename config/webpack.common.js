@@ -1,19 +1,22 @@
 /*
  * @Descripttion:
  * @Author: Jason
- * @LastEditTime: 2021-03-13 20:10:53
+ * @LastEditTime: 2021-03-19 17:58:41
  */
 const webpack = require('webpack');
-const paths = require('./paths');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const paths = require('./paths');
+
 const cssRegex = /\.css$/;
 const cssModuleRegex = /\.module\.css$/;
 const sassRegex = /\.(scss|sass)$/;
 const sassModuleRegex = /\.module\.(scss|sass)$/;
 const imageInlineSizeLimit = 4 * 1024;
 
-module.exports = function (options) {
-    const isEnvDevelopment = options.mode === 'development';
+module.exports = (options) => {
+    // const isEnvDevelopment = options.mode === 'development';
     const isEnvProduction = options.mode === 'production';
 
     return {
@@ -23,12 +26,23 @@ module.exports = function (options) {
             path: paths.appBuild,
             publicPath: '/',
         },
-        cache: { // 使用持久化缓存
-            type: 'filesystem',//memory:缓存大内存 filesystem：缓存到node_moudules文件
+        cache: {
+            // 使用持久化缓存
+            type: 'filesystem', // memory:缓存大内存 filesystem：缓存到node_moudules文件
         },
         devtool: options.devtool,
         module: {
             rules: [
+                // {
+                //     test: /\.(js|jsx)$/,
+                //     enforce: 'pre',
+                //     exclude: /node_modules/,
+                //     loader: 'eslint-loader',
+                //     options: {
+                //         fix: true, // 启用ESLint自动修复功能
+                //         cache: true,
+                //     },
+                // },
                 {
                     oneOf: [
                         {
@@ -37,76 +51,84 @@ module.exports = function (options) {
                             use: [
                                 {
                                     loader: 'babel-loader',
-                                    options: {
-                                        presets: [
-                                            "@babel/preset-env",
-                                            "@babel/preset-react"
-                                        ]
-                                    },
-                                }
+                                },
                             ],
                         },
                         {
                             test: cssRegex,
                             exclude: cssModuleRegex,
-                            use: ['style-loader', {
-                                loader: 'css-loader',
-                                options: {
-                                    importLoaders: 1 // 0 => 无 loader(默认); 1 => postcss-loader; 2 => postcss-loader, sass-loader
-                                }
-                            }, 'postcss-loader']
+                            use: [
+                                isEnvProduction ? MiniCssExtractPlugin.loader : 'style-loader',
+                                {
+                                    loader: 'css-loader',
+                                    options: {
+                                        importLoaders: 1,
+                                    },
+                                },
+                                'postcss-loader',
+                            ],
                         },
                         {
                             test: sassRegex,
                             exclude: sassModuleRegex,
-                            use: ['style-loader', {
-                                loader: 'css-loader',
-                                options: {
-                                    importLoaders: 1 // 查询参数 importLoaders，用于配置「css-loader 作用于 @import 的资源之前」有多少个 loader
-                                }
-                            }, 'postcss-loader', 'sass-loader'],
+                            use: [
+                                isEnvProduction ? MiniCssExtractPlugin.loader : 'style-loader',
+                                {
+                                    loader: 'css-loader',
+                                    options: {
+                                        importLoaders: 1,
+                                    },
+                                },
+                                'postcss-loader',
+                                'sass-loader',
+                            ],
                         },
                         {
                             test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
                             type: 'asset',
                             parser: {
                                 dataUrlCondition: {
-                                    maxSize: imageInlineSizeLimit // 4kb
-                                }
-                            }
+                                    maxSize: imageInlineSizeLimit, // 4kb
+                                },
+                            },
                         },
                         {
                             test: /\.(eot|svg|ttf|woff|woff2?)$/,
-                            type: 'asset/resource'
+                            type: 'asset/resource',
                         },
-                    ]
-                }
-
-            ]
+                    ],
+                },
+            ],
+        },
+        optimization: {
+            minimize: isEnvProduction,
+            minimizer: [
+                new CssMinimizerPlugin({
+                    parallel: true, // 开启多线程压缩
+                }),
+            ],
         },
         devServer: {},
         plugins: [
             new HtmlWebpackPlugin({
-                template: './public/index.html'
+                template: './public/index.html',
             }),
             new webpack.DefinePlugin({
-                'NODE_ENV': isEnvProduction && JSON.stringify('production'), // 设置全局
+                NODE_ENV: isEnvProduction && JSON.stringify('production'), // 设置全局
             }),
             new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
             ...options.plugins,
         ],
-        stats: options.stats,// 打包日志发生错误和新的编译时输出
+        stats: options.stats, // 打包日志发生错误和新的编译时输出
         performance: false,
         resolve: {
             modules: [paths.appNodeModules],
-            extensions: ['.js', '.jsx', '.react.js'],
+            extensions: ['.js', '.jsx', '*'],
             mainFields: ['browser', 'jsnext:main', 'main'],
             alias: {
                 moment$: 'moment/moment.js',
-                '@src': paths.appSrc,
-                '@public': paths.appPublic,
+                '@/': paths.appSrc,
             },
         },
-    }
-}
-
+    };
+};

@@ -1,7 +1,7 @@
 /*
  * @Descripttion: node 启动时打印出ip，代理信息
  * @Author: Jason
- * @LastEditTime: 2021-02-27 12:57:28
+ * @LastEditTime: 2021-03-14 11:38:12
  */
 
 const chalk = require('chalk'); // 粉笔
@@ -22,9 +22,9 @@ const logger = {
         console.log(`
 ${chalk.bold('Access URLs:')}${divider}
 Localhost: ${chalk.magenta(`http://${host}:${port}`)}
-LAN: ${chalk.magenta(`http://${ip.address()}:${port}`) +
-            (tunnelStarted ? `\n    Proxy: ${chalk.magenta(tunnelStarted)}` : '')
-            }${divider}
+LAN: ${chalk.magenta(`http://${ip.address()}:${port}`)
+            + (tunnelStarted ? `\n    Proxy: ${chalk.magenta(tunnelStarted)}` : '')
+}${divider}
 ${chalk.blue(`Press ${chalk.italic('CTRL-C')} to stop`)}
     `);
     },
