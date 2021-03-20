@@ -1,11 +1,13 @@
-
-  {
+{
     "compilerOptions": {
-        "baseUrl": "./src",
+        "module": "commonjs",
+        "target": "es6",
+        "baseUrl": ".",
         "paths": {
-            "@/*": ["./*"]
+            "@/src/*": ["./src/*"]
         },
       "experimentalDecorators": true
     },
-    "exclude": ["node_module"]
+    // "exclude": ["node_module"]
+    "include": ["./src/**/*"]
 }

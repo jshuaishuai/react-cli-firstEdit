@@ -1,7 +1,7 @@
 /*
  * @Descripttion:
  * @Author: Jason
- * @LastEditTime: 2021-03-19 18:02:47
+ * @LastEditTime: 2021-03-20 15:39:28
  */
 module.exports = {
     env: {
@@ -55,9 +55,13 @@ module.exports = {
     settings: {
         'import/resolve': {
             webpack: {
-                config: 'config/webpack.dev.js',
+                config: './config/webpack.dev.js',
             },
         },
+        react: {
+            version: 'detect',
+        },
+
     },
 };
 /*

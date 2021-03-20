@@ -1,7 +1,7 @@
 /*
  * @Descripttion:
  * @Author: Jason
- * @LastEditTime: 2021-03-19 12:25:30
+ * @LastEditTime: 2021-03-20 10:52:39
  */
 const ESLintPlugin = require('eslint-webpack-plugin');
 const paths = require('./paths');
@@ -13,7 +13,7 @@ module.exports = require('./webpack.common')({
         new ESLintPlugin({
             fix: true,
             extensions: ['js', 'jsx'],
-            exclude: '/node_modules/',
+            exclude: ['/node_modules/', 'build'],
             cache: true,
             cwd: paths.appPath,
         }),
