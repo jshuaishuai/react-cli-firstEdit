@@ -6,7 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 node_modules
 # Runtime data
-
+dist
 build
 # Typescript v1 declaration files
 typings/
