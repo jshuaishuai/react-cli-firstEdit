@@ -1,7 +1,7 @@
 /*
  * @Descripttion:
  * @Author: Jason
- * @LastEditTime: 2021-03-21 20:34:10
+ * @LastEditTime: 2021-03-22 21:31:23
  */
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -90,7 +90,7 @@ module.exports = (options) => {
                                 {
                                     loader: 'css-loader',
                                     options: {
-                                        importLoaders: 1,
+                                        importLoaders: 2,
                                         sourceMap: true,
                                     },
                                 },
